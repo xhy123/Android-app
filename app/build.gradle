@@ -1,0 +1,134 @@
+apply plugin: 'com.android.application'
+apply from: '../config/properties-util.gradle'
+
+android {
+
+    compileSdkVersion rootProject.ext.compileSdkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
+
+    defaultConfig {
+        applicationId rootProject.ext.applicationId
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode rootProject.ext.versionCode
+        versionName rootProject.ext.versionName
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "API_SERVER_URL", '"https://www.oschina.net/;http://192.168.1.10/"')
+    }
+
+    // rename the apk with the version name
+    applicationVariants.all { variant ->
+        variant.outputs.each { output ->
+            output.outputFile = new File(
+                    output.outputFile.parent + "/${variant.buildType.name}",
+                    "osc-android-${variant.versionName}-${variant.productFlavors[0].name}-${variant.buildType.name}.apk".toLowerCase())
+        }
+    }
+
+    //signing files settings
+    signingConfigs {
+        if (propertyHaveSigningConfigs) {
+            debug {
+                storeFile file(propertyStoreFileStr)
+                storePassword propertyStorePwdStr
+                keyAlias propertyKeyAliasStr
+                keyPassword propertyKeyPwdStr
+            }
+
+            release {
+                storeFile file(propertyStoreFileStr)
+                storePassword propertyStorePwdStr
+                keyAlias propertyKeyAliasStr
+                keyPassword propertyKeyPwdStr
+            }
+        }
+    }
+
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs']
+        }
+    }
+
+    // 移除lint检查的error
+    lintOptions {
+        abortOnError false
+    }
+
+    //build type setting
+    buildTypes {
+
+        debug {
+            zipAlignEnabled false
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (propertyHaveSigningConfigs)
+                signingConfig signingConfigs.debug
+        }
+
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            zipAlignEnabled true
+            if (propertyHaveSigningConfigs)
+                signingConfig signingConfigs.release
+        }
+    }
+
+    //product flavors
+    productFlavors {
+        oschina {
+            manifestPlaceholders = [UMENG_CHANNEL: "oschina"]
+        }
+    }
+}
+
+repositories {
+    flatDir {
+        dirs 'libs'
+    }
+    if (propertyHaveDebugCompile) {
+        maven {
+            url propertyDebugCompileUrl
+        }
+    }
+}
+
+dependencies {
+    compile "com.android.support:support-v4:$rootProject.ext.supportVersion"
+    compile "com.android.support:appcompat-v7:$rootProject.ext.supportVersion"
+    compile "com.android.support:design:$rootProject.ext.supportVersion"
+    compile "com.android.support:recyclerview-v7:$rootProject.ext.supportVersion"
+    compile "com.android.support:cardview-v7:$rootProject.ext.supportVersion"
+
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+    compile project(':open')
+
+
+    if (propertyHaveDebugCompile) {
+        compile propertyDebugCompile
+    }
+
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+
+    compile 'com.github.chrisbanes.photoview:library:1.2.4'
+    compile 'com.loopj.android:android-async-http:1.4.9'
+    compile 'com.jakewharton:butterknife:7.0.1'
+    compile 'com.google.zxing:core:3.3.0'
+    compile 'com.joanzapata.android:android-iconify:1.0.9'
+    compile 'com.makeramen:roundedimageview:2.1.1'
+    compile 'pub.devrel:easypermissions:0.3.0'
+    compile 'com.github.bumptech.glide:glide:3.7.0'
+    compile 'de.hdodenhof:circleimageview:2.0.0'
+    compile 'com.google.code.gson:gson:2.8.0'
+    compile 'com.umeng.analytics:analytics:latest.integration'
+    compile 'net.oschina.common:common:0.1.6'
+    compile 'com.belerweb:pinyin4j:2.5.1'
+    testCompile 'junit:junit:4.12'
+}
+
+
+apply plugin: 'com.getkeepsafe.dexcount'
